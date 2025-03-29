@@ -331,21 +331,72 @@
             try {
                 // Load enemies data
                 const enemiesResponse = await fetch('enemies.json');
+                if (!enemiesResponse.ok) {
+                    throw new Error(`Failed to load enemies.json: ${enemiesResponse.status} ${enemiesResponse.statusText}`);
+                }
                 enemiesData = await enemiesResponse.json();
                 
                 // Load items data
                 const itemsResponse = await fetch('items.json');
+                if (!itemsResponse.ok) {
+                    throw new Error(`Failed to load items.json: ${itemsResponse.status} ${itemsResponse.statusText}`);
+                }
                 itemsData = await itemsResponse.json();
                 
                 // Load reward list data
-                const rewardResponse = await fetch('reward_list_en.json');
+                const rewardResponse = await fetch(`reward_list_${currentLanguage}.json`);
+                if (!rewardResponse.ok) {
+                    throw new Error(`Failed to load reward_list_${currentLanguage}.json: ${rewardResponse.status} ${rewardResponse.statusText}`);
+                }
                 rewardListData = await rewardResponse.json();
                 
                 // Initialize the UI
                 populateMonsterList();
+                
+                // Add an initial reward item
+                if (rewardItems.length === 0) {
+                    addReward();
+                }
+                
+                console.log("Data loaded successfully");
             } catch (error) {
                 showAlert("Error loading data: " + error.message);
                 console.error("Error loading data:", error);
+                
+                // Provide fallback data if loading fails
+                if (enemiesData.length === 0) {
+                    console.warn("Using fallback enemy data");
+                    enemiesData = [
+                        {
+                            id: 0,
+                            fixedId: 26,
+                            label: "EM0001_00_0",
+                            name: {
+                                cn: "雌火龙",
+                                en: "Rathian",
+                                jp: "リオレイア"
+                            }
+                        }
+                    ];
+                }
+                
+                if (itemsData.length === 0) {
+                    console.warn("Using fallback item data");
+                    itemsData = [
+                        {
+                            id: 1,
+                            fixedId: 2,
+                            label: "ITEM_0000",
+                            name: {
+                                cn: "回复药",
+                                en: "Potion",
+                                jp: "回復薬"
+                            }
+                        }
+                    ];
+                }
+                
+                populateMonsterList();
             }
         }
 
@@ -373,9 +424,36 @@
             // Language selector
             document.getElementById('language').addEventListener('change', function() {
                 currentLanguage = this.value;
+                
+                // Update UI elements
                 populateMonsterList();
                 updateMonsterPreview();
                 updateRewardItemNames();
+                
+                // If quest data exists, update the summary
+                if (questData.raw && questData.ext) {
+                    updateQuestSummary();
+                }
+                
+                // Try to load reward list for the selected language
+                try {
+                    fetch(`reward_list_${currentLanguage}.json`)
+                        .then(response => {
+                            if (response.ok) {
+                                return response.json();
+                            }
+                            throw new Error(`Could not load reward list for ${currentLanguage}`);
+                        })
+                        .then(data => {
+                            rewardListData = data;
+                            console.log(`Loaded reward list for ${currentLanguage}`);
+                        })
+                        .catch(err => {
+                            console.warn(`Failed to load reward list for ${currentLanguage}`, err);
+                        });
+                } catch (error) {
+                    console.warn(`Error loading reward list for ${currentLanguage}`, error);
+                }
             });
         }
 
@@ -473,20 +551,31 @@
         // Update monster preview
         function updateMonsterPreview() {
             const preview = document.getElementById('monster-preview');
+            if (!preview) {
+                console.error("Element with ID 'monster-preview' not found");
+                return;
+            }
             
             if (selectedMonsters.length === 0) {
                 preview.innerHTML = '<h3>Selected Monsters:</h3><p>No monsters selected</p>';
                 return;
             }
             
-            let html = '<h3>Selected Monsters:</h3><ol>';
-            
-            selectedMonsters.forEach(monster => {
-                html += `<li>${monster.name[currentLanguage]} (${monster.label})</li>`;
-            });
-            
-            html += '</ol>';
-            preview.innerHTML = html;
+            try {
+                let html = '<h3>Selected Monsters:</h3><ol>';
+                
+                selectedMonsters.forEach(monster => {
+                    const monsterName = monster.name && monster.name[currentLanguage] ? 
+                        monster.name[currentLanguage] : 'Unknown Monster';
+                    html += `<li>${monsterName} (${monster.label})</li>`;
+                });
+                
+                html += '</ol>';
+                preview.innerHTML = html;
+            } catch (error) {
+                console.error("Error updating monster preview:", error);
+                preview.innerHTML = '<h3>Selected Monsters:</h3><p>Error displaying monsters</p>';
+            }
         }
 
         // Add a reward item
@@ -640,11 +729,13 @@
             // Validate inputs
             if (selectedMonsters.length === 0) {
                 showAlert("Please select at least one monster");
+                activateTab('monsters');
                 return;
             }
             
             if (rewardItems.length === 0) {
                 showAlert("Please add at least one reward item");
+                activateTab('rewards');
                 return;
             }
             
@@ -973,33 +1064,43 @@
             if (!questData.raw || !questData.ext) return;
             
             const summary = document.getElementById('quest-summary');
+            if (!summary) {
+                console.error("Element with ID 'quest-summary' not found");
+                return;
+            }
+            
             const quest = questData.raw;
             const rewards = questData.ext.rewardItems;
             
-            let html = `
-                <div><strong>Title:</strong> ${quest._MessageAssetList.find(m => m.Language === getLanguageCode(currentLanguage)).MessageData[2].Text}</div>
-                <div><strong>ID:</strong> ${quest._DataList._MissionId._Value}</div>
-                <div><strong>Level:</strong> ★${quest._DataList._QuestLv}</div>
-                <div><strong>Location:</strong> ${quest._DataList._Stage._Name}</div>
-                <div><strong>Time Limit:</strong> ${quest._DataList._TimeLimit} minutes</div>
-                <div><strong>Reward Money:</strong> ${quest._DataList._RemMoney}</div>
-                <div><strong>HR Points:</strong> ${quest._DataList._HRPoint}</div>
-                <div><strong>Monsters:</strong></div>
-                <ul>
-                    ${quest._BossZakoDataList._MainTargetDataList.map(target => {
-                        const monster = enemiesData.find(m => m.fixedId === target._EmID);
-                        return `<li>${monster ? monster.name[currentLanguage] : 'Unknown Monster'}</li>`;
-                    }).join('')}
-                </ul>
-                <div><strong>Rewards:</strong></div>
-                <ul>
-                    ${rewards.map(reward => `
-                        <li>${reward.itemName} (x${reward.minCount}-${reward.maxCount}) - ${reward.probability}%</li>
-                    `).join('')}
-                </ul>
-            `;
-            
-            summary.innerHTML = html;
+            try {
+                let html = `
+                    <div><strong>Title:</strong> ${quest._MessageAssetList.find(m => m.Language === getLanguageCode(currentLanguage)).MessageData[2].Text}</div>
+                    <div><strong>ID:</strong> ${quest._DataList._MissionId._Value}</div>
+                    <div><strong>Level:</strong> ★${quest._DataList._QuestLv}</div>
+                    <div><strong>Location:</strong> ${quest._DataList._Stage._Name}</div>
+                    <div><strong>Time Limit:</strong> ${quest._DataList._TimeLimit} minutes</div>
+                    <div><strong>Reward Money:</strong> ${quest._DataList._RemMoney}</div>
+                    <div><strong>HR Points:</strong> ${quest._DataList._HRPoint}</div>
+                    <div><strong>Monsters:</strong></div>
+                    <ul>
+                        ${quest._BossZakoDataList._MainTargetDataList.map(target => {
+                            const monster = enemiesData.find(m => m.fixedId === target._EmID);
+                            return `<li>${monster ? monster.name[currentLanguage] : 'Unknown Monster'}</li>`;
+                        }).join('')}
+                    </ul>
+                    <div><strong>Rewards:</strong></div>
+                    <ul>
+                        ${rewards.map(reward => `
+                            <li>${reward.itemName} (x${reward.minCount}-${reward.maxCount}) - ${reward.probability}%</li>
+                        `).join('')}
+                    </ul>
+                `;
+                
+                summary.innerHTML = html;
+            } catch (error) {
+                console.error("Error updating quest summary:", error);
+                showAlert("Error updating quest summary: " + error.message);
+            }
         }
 
         // Download the quest files
