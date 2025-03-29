@@ -31,7 +31,7 @@
             margin-bottom: 5px;
             font-weight: bold;
         }
-        input, select {
+        input, select, textarea {
             width: 100%;
             padding: 8px;
             border: 1px solid #ddd;
@@ -162,6 +162,8 @@
             border: 1px solid #ddd;
             border-radius: 5px;
             white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
         }
         .preview {
             background-color: #f0f8ff;
@@ -196,15 +198,15 @@
 
     <h1>Monster Hunter Wild - Custom Quest Generator</h1>
     
+    <div class="alert" id="alert-message"></div>
+    
     <div class="container">
         <div class="tabs">
             <div class="tab active" data-tab="quest-info">Quest Info</div>
             <div class="tab" data-tab="monsters">Monsters</div>
             <div class="tab" data-tab="rewards">Rewards</div>
-            <div class="tab" data-tab="output">Generate & Export</div>
+            <div class="tab" data-tab="generate">Generate & Export</div>
         </div>
-        
-        <div class="alert" id="alert-message"></div>
         
         <div class="tab-content active" id="quest-info">
             <h2>Basic Quest Information</h2>
@@ -214,11 +216,11 @@
             </div>
             <div class="form-group">
                 <label for="questTitle">Quest Title:</label>
-                <input type="text" id="questTitle" placeholder="Enter quest title">
+                <input type="text" id="questTitle" placeholder="Enter quest title" value="Custom Hunt">
             </div>
             <div class="form-group">
                 <label for="questDescription">Quest Description:</label>
-                <textarea id="questDescription" rows="4" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+                <textarea id="questDescription" rows="4" style="width: 100%;" placeholder="Enter quest description">A custom monster hunt created with Quest Generator.</textarea>
             </div>
             <div class="form-group">
                 <label for="questLevel">Quest Level (★):</label>
@@ -256,7 +258,7 @@
                 <input type="number" id="hrPoints" min="100" step="10" value="660">
             </div>
             <div class="button-group">
-                <button onclick="nextTab('monsters')">Next: Select Monsters</button>
+                <button onclick="goToTab('monsters')">Next: Select Monsters</button>
             </div>
         </div>
         
@@ -271,8 +273,8 @@
                 <p>No monsters selected</p>
             </div>
             <div class="button-group">
-                <button class="secondary" onclick="previousTab('quest-info')">Previous</button>
-                <button onclick="nextTab('rewards')">Next: Set Rewards</button>
+                <button class="secondary" onclick="goToTab('quest-info')">Previous</button>
+                <button onclick="goToTab('rewards')">Next: Set Rewards</button>
             </div>
         </div>
         
@@ -284,26 +286,24 @@
             </div>
             <button onclick="addReward()" style="margin-top: 15px;">+ Add Reward Item</button>
             <div class="button-group">
-                <button class="secondary" onclick="previousTab('monsters')">Previous</button>
-                <button onclick="nextTab('output')">Next: Generate Quest</button>
+                <button class="secondary" onclick="goToTab('monsters')">Previous</button>
+                <button onclick="goToTab('generate')">Next: Generate Quest</button>
             </div>
         </div>
         
-        <div class="tab-content" id="output">
+        <div class="tab-content" id="generate">
             <h2>Generated Quest</h2>
-            <div class="preview" id="quest-preview">
+            <div class="preview" id="quest-summary">
                 <h3>Quest Summary</h3>
-                <div id="quest-summary">
-                    <!-- Quest summary will be displayed here -->
-                </div>
+                <p>Click the "Generate Quest Files" button to create your custom quest.</p>
             </div>
             <div class="button-group">
-                <button class="secondary" onclick="previousTab('rewards')">Previous</button>
+                <button class="secondary" onclick="goToTab('rewards')">Previous</button>
                 <button onclick="generateQuest()">Generate Quest Files</button>
                 <button onclick="downloadQuest()" id="download-btn" disabled>Download Quest Files</button>
             </div>
             <h3>Raw JSON Output:</h3>
-            <pre id="output"></pre>
+            <pre id="output">Quest data will appear here after generation.</pre>
         </div>
     </div>
 
@@ -406,7 +406,7 @@
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.addEventListener('click', () => {
                     const tabId = tab.dataset.tab;
-                    activateTab(tabId);
+                    goToTab(tabId);
                 });
             });
 
@@ -429,11 +429,6 @@
                 populateMonsterList();
                 updateMonsterPreview();
                 updateRewardItemNames();
-                
-                // If quest data exists, update the summary
-                if (questData.raw && questData.ext) {
-                    updateQuestSummary();
-                }
                 
                 // Try to load reward list for the selected language
                 try {
@@ -458,7 +453,7 @@
         }
 
         // Tab navigation functions
-        function activateTab(tabId) {
+        function goToTab(tabId) {
             // Hide all tab contents
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
@@ -470,26 +465,23 @@
             });
             
             // Activate the selected tab and its content
-            document.getElementById(tabId).classList.add('active');
-            document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
-        }
-
-        function nextTab(tabId) {
-            activateTab(tabId);
-        }
-
-        function previousTab(tabId) {
-            activateTab(tabId);
+            const tabContent = document.getElementById(tabId);
+            const tab = document.querySelector(`.tab[data-tab="${tabId}"]`);
+            
+            if (tabContent) tabContent.classList.add('active');
+            if (tab) tab.classList.add('active');
         }
 
         // Populate monster list
         function populateMonsterList() {
             const monsterList = document.getElementById('monster-list');
+            if (!monsterList) return;
+            
             monsterList.innerHTML = '';
 
             enemiesData.forEach(monster => {
                 // Skip monsters with empty names
-                if (!monster.name[currentLanguage]) return;
+                if (!monster.name || !monster.name[currentLanguage]) return;
                 
                 const card = document.createElement('div');
                 card.className = 'monster-card';
@@ -551,10 +543,7 @@
         // Update monster preview
         function updateMonsterPreview() {
             const preview = document.getElementById('monster-preview');
-            if (!preview) {
-                console.error("Element with ID 'monster-preview' not found");
-                return;
-            }
+            if (!preview) return;
             
             if (selectedMonsters.length === 0) {
                 preview.innerHTML = '<h3>Selected Monsters:</h3><p>No monsters selected</p>';
@@ -581,12 +570,14 @@
         // Add a reward item
         function addReward() {
             const rewardContainer = document.getElementById('reward-items');
+            if (!rewardContainer) return;
+            
             const rewardIndex = rewardItems.length;
             
             // Create a new reward item object
             const newReward = {
-                itemId: itemsData[0].id,
-                itemName: itemsData[0].name[currentLanguage],
+                itemId: itemsData.length > 0 ? itemsData[0].id : 1,
+                itemName: itemsData.length > 0 ? (itemsData[0].name[currentLanguage] || "Unknown Item") : "Potion",
                 minCount: 1,
                 maxCount: 1,
                 probability: 100
@@ -604,7 +595,7 @@
                     <select class="item-select" onchange="updateRewardItem(${rewardIndex}, 'itemId', this.value)">
                         ${itemsData.map(item => `
                             <option value="${item.id}" ${item.id === newReward.itemId ? 'selected' : ''}>
-                                ${item.name[currentLanguage] || '---'}
+                                ${item.name && item.name[currentLanguage] ? item.name[currentLanguage] : '---'}
                             </option>
                         `).join('')}
                     </select>
@@ -629,7 +620,8 @@
                 const selectedItem = itemsData.find(item => item.id == value);
                 if (selectedItem) {
                     rewardItems[index].itemId = parseInt(value);
-                    rewardItems[index].itemName = selectedItem.name[currentLanguage];
+                    rewardItems[index].itemName = selectedItem.name && selectedItem.name[currentLanguage] ? 
+                        selectedItem.name[currentLanguage] : 'Unknown Item';
                 }
             } else if (property === 'minCount' || property === 'maxCount') {
                 rewardItems[index][property] = parseInt(value);
@@ -638,8 +630,10 @@
                 if (rewardItems[index].minCount > rewardItems[index].maxCount) {
                     rewardItems[index].maxCount = rewardItems[index].minCount;
                     const rewardElement = document.querySelector(`.reward-item[data-index="${index}"]`);
-                    const maxInput = rewardElement.querySelectorAll('input')[1];
-                    maxInput.value = rewardItems[index].maxCount;
+                    if (rewardElement) {
+                        const maxInput = rewardElement.querySelectorAll('input')[1];
+                        if (maxInput) maxInput.value = rewardItems[index].maxCount;
+                    }
                 }
             } else if (property === 'probability') {
                 rewardItems[index][property] = parseInt(value);
@@ -656,6 +650,8 @@
             
             // Recreate all reward items to update indices
             const rewardContainer = document.getElementById('reward-items');
+            if (!rewardContainer) return;
+            
             rewardContainer.innerHTML = '';
             
             rewardItems.forEach((item, idx) => {
@@ -668,7 +664,7 @@
                         <select class="item-select" onchange="updateRewardItem(${idx}, 'itemId', this.value)">
                             ${itemsData.map(menuItem => `
                                 <option value="${menuItem.id}" ${menuItem.id === item.itemId ? 'selected' : ''}>
-                                    ${menuItem.name[currentLanguage] || '---'}
+                                    ${menuItem.name && menuItem.name[currentLanguage] ? menuItem.name[currentLanguage] : '---'}
                                 </option>
                             `).join('')}
                         </select>
@@ -690,17 +686,19 @@
         function updateRewardItemNames() {
             rewardItems.forEach((item, index) => {
                 const selectedItem = itemsData.find(menuItem => menuItem.id === item.itemId);
-                if (selectedItem) {
-                    item.itemName = selectedItem.name[currentLanguage];
+                if (selectedItem && selectedItem.name) {
+                    item.itemName = selectedItem.name[currentLanguage] || 'Unknown Item';
                     
                     const rewardElement = document.querySelector(`.reward-item[data-index="${index}"]`);
                     if (rewardElement) {
                         const select = rewardElement.querySelector('select');
-                        select.innerHTML = itemsData.map(menuItem => `
-                            <option value="${menuItem.id}" ${menuItem.id === item.itemId ? 'selected' : ''}>
-                                ${menuItem.name[currentLanguage] || '---'}
-                            </option>
-                        `).join('');
+                        if (select) {
+                            select.innerHTML = itemsData.map(menuItem => `
+                                <option value="${menuItem.id}" ${menuItem.id === item.itemId ? 'selected' : ''}>
+                                    ${menuItem.name && menuItem.name[currentLanguage] ? menuItem.name[currentLanguage] : '---'}
+                                </option>
+                            `).join('');
+                        }
                     }
                 }
             });
@@ -727,19 +725,16 @@
         // Generate quest
         function generateQuest() {
             try {
-                // First make sure we're on the output tab
-                activateTab('output');
-                
                 // Validate inputs
                 if (selectedMonsters.length === 0) {
                     showAlert("Please select at least one monster");
-                    activateTab('monsters');
+                    goToTab('monsters');
                     return;
                 }
                 
                 if (rewardItems.length === 0) {
                     showAlert("Please add at least one reward item");
-                    activateTab('rewards');
+                    goToTab('rewards');
                     return;
                 }
                 
@@ -1070,99 +1065,73 @@
                 questData.raw = rawData;
                 questData.ext = extData;
                 
+                // Update the quest summary
+                updateQuestSummary();
+                
                 // Display the quest data in the output area
                 const outputElement = document.getElementById('output');
                 if (outputElement) {
                     outputElement.textContent = JSON.stringify(questData, null, 4);
-                } else {
-                    console.error("Output element not found");
                 }
                 
-                // Find download button and enable it
+                // Enable the download button
                 const downloadButton = document.getElementById('download-btn');
                 if (downloadButton) {
                     downloadButton.disabled = false;
-                } else {
-                    console.error("Download button not found");
-                }
-                
-                // Create a simple quest summary for the preview area
-                const questPreview = document.getElementById('quest-preview');
-                if (questPreview) {
-                    let monsterNames = selectedMonsters.map(monster => 
-                        monster.name && monster.name[currentLanguage] ? 
-                            monster.name[currentLanguage] : 'Unknown Monster'
-                    ).join(", ");
-                    
-                    let rewardsList = rewardItems.map(reward => 
-                        `${reward.itemName} (x${reward.minCount}-${reward.maxCount}) - ${reward.probability}%`
-                    ).join(", ");
-                    
-                    let summary = `
-                        <h3>Quest Summary</h3>
-                        <div>
-                            <div><strong>Title:</strong> ${questTitle}</div>
-                            <div><strong>ID:</strong> ${questId}</div>
-                            <div><strong>Level:</strong> ★${questLevel}</div>
-                            <div><strong>Location:</strong> ${getLocationName(questLocation)}</div>
-                            <div><strong>Time Limit:</strong> ${timeLimit} minutes</div>
-                            <div><strong>Reward Money:</strong> ${rewardMoney}</div>
-                            <div><strong>HR Points:</strong> ${hrPoints}</div>
-                            <div><strong>Monsters:</strong> ${monsterNames}</div>
-                            <div><strong>Rewards:</strong> ${rewardsList}</div>
-                        </div>
-                    `;
-                    
-                    questPreview.innerHTML = summary;
-                } else {
-                    console.error("Quest preview element not found");
                 }
                 
                 showAlert("Quest generated successfully!", "success");
             } catch (error) {
                 console.error("Error generating quest:", error);
-                showAlert("Error generating quest: " + error.message, "error");
+                showAlert("Error generating quest: " + error.message);
             }
         }
 
         // Update the quest summary
         function updateQuestSummary() {
-            if (!questData.raw || !questData.ext) return;
-            
-            const summary = document.getElementById('quest-summary');
-            if (!summary) {
-                console.error("Element with ID 'quest-summary' not found");
-                return;
-            }
-            
-            const quest = questData.raw;
-            const rewards = questData.ext.rewardItems;
-            
             try {
+                if (!questData.raw || !questData.ext) return;
+                
+                const questSummary = document.getElementById('quest-summary');
+                if (!questSummary) {
+                    console.error("Quest summary element not found");
+                    return;
+                }
+                
+                const quest = questData.raw;
+                const rewards = questData.ext.rewardItems;
+                
+                let monstersList = '';
+                quest._BossZakoDataList._MainTargetDataList.forEach(target => {
+                    const monster = enemiesData.find(m => m.fixedId === target._EmID);
+                    const monsterName = monster && monster.name && monster.name[currentLanguage] ? 
+                        monster.name[currentLanguage] : 'Unknown Monster';
+                    monstersList += `<li>${monsterName} (${monster ? monster.label : 'Unknown'})</li>`;
+                });
+                
+                let rewardsList = '';
+                rewards.forEach(reward => {
+                    rewardsList += `<li>${reward.itemName} (x${reward.minCount}-${reward.maxCount}) - ${reward.probability}%</li>`;
+                });
+                
                 let html = `
-                    <div><strong>Title:</strong> ${quest._MessageAssetList.find(m => m.Language === getLanguageCode(currentLanguage)).MessageData[2].Text}</div>
-                    <div><strong>ID:</strong> ${quest._DataList._MissionId._Value}</div>
-                    <div><strong>Level:</strong> ★${quest._DataList._QuestLv}</div>
-                    <div><strong>Location:</strong> ${quest._DataList._Stage._Name}</div>
-                    <div><strong>Time Limit:</strong> ${quest._DataList._TimeLimit} minutes</div>
-                    <div><strong>Reward Money:</strong> ${quest._DataList._RemMoney}</div>
-                    <div><strong>HR Points:</strong> ${quest._DataList._HRPoint}</div>
-                    <div><strong>Monsters:</strong></div>
-                    <ul>
-                        ${quest._BossZakoDataList._MainTargetDataList.map(target => {
-                            const monster = enemiesData.find(m => m.fixedId === target._EmID);
-                            return `<li>${monster ? monster.name[currentLanguage] : 'Unknown Monster'}</li>`;
-                        }).join('')}
-                    </ul>
-                    <div><strong>Rewards:</strong></div>
-                    <ul>
-                        ${rewards.map(reward => `
-                            <li>${reward.itemName} (x${reward.minCount}-${reward.maxCount}) - ${reward.probability}%</li>
-                        `).join('')}
-                    </ul>
+                    <h3>Quest Summary</h3>
+                    <div>
+                        <div><strong>Title:</strong> ${quest._MessageAssetList.find(m => m.Language === getLanguageCode(currentLanguage)).MessageData[2].Text}</div>
+                        <div><strong>ID:</strong> ${quest._DataList._MissionId._Value}</div>
+                        <div><strong>Level:</strong> ★${quest._DataList._QuestLv}</div>
+                        <div><strong>Location:</strong> ${quest._DataList._Stage._Name}</div>
+                        <div><strong>Time Limit:</strong> ${quest._DataList._TimeLimit} minutes</div>
+                        <div><strong>Reward Money:</strong> ${quest._DataList._RemMoney}</div>
+                        <div><strong>HR Points:</strong> ${quest._DataList._HRPoint}</div>
+                        <div><strong>Monsters:</strong></div>
+                        <ul>${monstersList}</ul>
+                        <div><strong>Rewards:</strong></div>
+                        <ul>${rewardsList}</ul>
+                    </div>
                 `;
                 
-                summary.innerHTML = html;
+                questSummary.innerHTML = html;
             } catch (error) {
                 console.error("Error updating quest summary:", error);
                 showAlert("Error updating quest summary: " + error.message);
@@ -1171,28 +1140,46 @@
 
         // Download the quest files
         function downloadQuest() {
-            if (!questData.raw || !questData.ext) {
-                showAlert("No quest data to download");
-                return;
+            try {
+                if (!questData.raw || !questData.ext) {
+                    showAlert("No quest data to download");
+                    return;
+                }
+                
+                const questId = questData.ext.questId;
+                
+                // Check if JSZip is available
+                if (typeof JSZip === 'undefined') {
+                    showAlert("JSZip library not loaded. Please check your internet connection and try again.");
+                    return;
+                }
+                
+                // Create a zip file with both quest files
+                const zip = new JSZip();
+                zip.file(`${questId}.raw.json`, JSON.stringify(questData.raw, null, 4));
+                zip.file(`${questId}.ext.json`, JSON.stringify(questData.ext, null, 4));
+                
+                // Generate the zip file
+                zip.generateAsync({type: "blob"})
+                    .then(function(content) {
+                        // Create a download link
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(content);
+                        link.download = `quest_${questId}.zip`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        showAlert("Quest files downloaded successfully!", "success");
+                    })
+                    .catch(function(error) {
+                        console.error("Error creating zip file:", error);
+                        showAlert("Error creating zip file: " + error.message);
+                    });
+            } catch (error) {
+                console.error("Error downloading quest:", error);
+                showAlert("Error downloading quest: " + error.message);
             }
-            
-            const questId = questData.ext.questId;
-            
-            // Create a zip file with both quest files
-            const zip = new JSZip();
-            zip.file(`${questId}.raw.json`, JSON.stringify(questData.raw, null, 4));
-            zip.file(`${questId}.ext.json`, JSON.stringify(questData.ext, null, 4));
-            
-            // Generate the zip file
-            zip.generateAsync({type: "blob"}).then(function(content) {
-                // Create a download link
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(content);
-                link.download = `quest_${questId}.zip`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
         }
 
         // Helper functions
@@ -1217,29 +1204,35 @@
         }
 
         function showAlert(message, type = 'error') {
-            const alert = document.getElementById('alert-message');
-            if (!alert) {
-                console.error("Alert element not found");
-                return;
+            try {
+                const alert = document.getElementById('alert-message');
+                if (!alert) {
+                    console.error("Alert element not found");
+                    console.log(message);
+                    return;
+                }
+                
+                alert.textContent = message;
+                alert.style.display = 'block';
+                
+                // Change color based on alert type
+                if (type === 'success') {
+                    alert.style.backgroundColor = '#d4edda';
+                    alert.style.borderColor = '#c3e6cb';
+                    alert.style.color = '#155724';
+                } else {
+                    alert.style.backgroundColor = '#f8d7da';
+                    alert.style.borderColor = '#f5c6cb';
+                    alert.style.color = '#721c24';
+                }
+                
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                }, 5000);
+            } catch (error) {
+                console.error("Error showing alert:", error);
+                console.log(message);
             }
-            
-            alert.textContent = message;
-            alert.style.display = 'block';
-            
-            // Change color based on alert type
-            if (type === 'success') {
-                alert.style.backgroundColor = '#d4edda';
-                alert.style.borderColor = '#c3e6cb';
-                alert.style.color = '#155724';
-            } else {
-                alert.style.backgroundColor = '#f8d7da';
-                alert.style.borderColor = '#f5c6cb';
-                alert.style.color = '#721c24';
-            }
-            
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 5000);
         }
     </script>
     
