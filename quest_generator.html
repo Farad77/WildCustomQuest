@@ -726,337 +726,403 @@
 
         // Generate quest
         function generateQuest() {
-            // Validate inputs
-            if (selectedMonsters.length === 0) {
-                showAlert("Please select at least one monster");
-                activateTab('monsters');
-                return;
-            }
-            
-            if (rewardItems.length === 0) {
-                showAlert("Please add at least one reward item");
-                activateTab('rewards');
-                return;
-            }
-            
-            const questId = parseInt(document.getElementById('questId').value);
-            const questTitle = document.getElementById('questTitle').value || "Custom Quest";
-            const questDescription = document.getElementById('questDescription').value || "A custom monster hunt";
-            const questLevel = parseInt(document.getElementById('questLevel').value);
-            const questLocation = document.getElementById('questLocation').value;
-            const timeLimit = parseInt(document.getElementById('timeLimit').value);
-            const rewardMoney = parseInt(document.getElementById('rewardMoney').value);
-            const hrPoints = parseInt(document.getElementById('hrPoints').value);
-            
-            // Generate the raw quest data
-            const rawData = {
-                "_ArenaDataList": {
-                    "_IsUserCamp": false,
-                    "_MissionID": null,
-                    "_SelectDatas": null,
-                    "_SelectNpcDatas": null,
-                    "_TimeRankA": null,
-                    "_TimeRankB": null,
-                    "_TimeRankS": null
-                },
-                "_BossZakoDataList": {
-                    "_AnimalLayoutID": {
-                        "_ID": "00000000-0000-0000-0000-000000000000",
-                        "_Resource": null
+            try {
+                // First make sure we're on the output tab
+                activateTab('output');
+                
+                // Validate inputs
+                if (selectedMonsters.length === 0) {
+                    showAlert("Please select at least one monster");
+                    activateTab('monsters');
+                    return;
+                }
+                
+                if (rewardItems.length === 0) {
+                    showAlert("Please add at least one reward item");
+                    activateTab('rewards');
+                    return;
+                }
+                
+                // Get form values with fallbacks
+                const questIdElement = document.getElementById('questId');
+                const questTitleElement = document.getElementById('questTitle');
+                const questDescriptionElement = document.getElementById('questDescription');
+                const questLevelElement = document.getElementById('questLevel');
+                const questLocationElement = document.getElementById('questLocation');
+                const timeLimitElement = document.getElementById('timeLimit');
+                const rewardMoneyElement = document.getElementById('rewardMoney');
+                const hrPointsElement = document.getElementById('hrPoints');
+                
+                if (!questIdElement || !questTitleElement || !questDescriptionElement || 
+                    !questLevelElement || !questLocationElement || !timeLimitElement || 
+                    !rewardMoneyElement || !hrPointsElement) {
+                    showAlert("Some form elements are missing. Please reload the page.");
+                    return;
+                }
+                
+                const questId = parseInt(questIdElement.value) || 10086;
+                const questTitle = questTitleElement.value || "Custom Quest";
+                const questDescription = questDescriptionElement.value || "A custom monster hunt";
+                const questLevel = parseInt(questLevelElement.value) || 8;
+                const questLocation = questLocationElement.value || "1181994624";
+                const timeLimit = parseInt(timeLimitElement.value) || 20;
+                const rewardMoney = parseInt(rewardMoneyElement.value) || 24000;
+                const hrPoints = parseInt(hrPointsElement.value) || 660;
+                
+                // Generate the raw quest data
+                const rawData = {
+                    "_ArenaDataList": {
+                        "_IsUserCamp": false,
+                        "_MissionID": null,
+                        "_SelectDatas": null,
+                        "_SelectNpcDatas": null,
+                        "_TimeRankA": null,
+                        "_TimeRankB": null,
+                        "_TimeRankS": null
                     },
-                    "_FieldID": {
-                        "_Name": getLocationName(questLocation),
-                        "_Value": parseInt(questLocation)
-                    },
-                    "_MainTargetDataList": selectedMonsters.map((monster, index) => ({
-                        "_AdvancedSettings": {
-                            "_IsDeepSleepCreate": false
+                    "_BossZakoDataList": {
+                        "_AnimalLayoutID": {
+                            "_ID": "00000000-0000-0000-0000-000000000000",
+                            "_Resource": null
                         },
-                        "_AreaNo": 255,
-                        "_DifficultyAdjustRange": 0,
-                        "_DifficultyRankId": {
-                            "Name": `★${questLevel}`,
-                            "Value": "aa92e87f-9a58-4a8f-8613-c00ddb9e763a"
-                        },
-                        "_EmID": monster.fixedId,
-                        "_EventTargetID": "INVALID",
-                        "_FixedSize": 100,
-                        "_GroupID": 0,
-                        "_InitPos": "(-326,-28,176)",
-                        "_IsUseRandomSize": false,
-                        "_LayoutKeepID": -1,
-                        "_LegendaryID": "NORMAL",
-                        "_OptionTag": {
-                            "Value": 0
-                        },
-                        "_RandomSizeTblId": {
-                            "Name": "",
-                            "Value": "f8f74ab0-0002-0000-00000002003e203e"
-                        },
-                        "_RoleID": "NORMAL",
-                        "_RouteID": {
-                            "Name": "斗技场",
-                            "_Value": "7ae19f9f-f315-4f16-cc4fc595f9f7c483"
-                        },
-                        "_SetAreaNo": 255,
-                        "_StoryTargetID": 101 + index
-                    })),
-                    "_SubBossLayoutID": {
-                        "_ID": "c8ed5a65-8c96-48cb-3a15eb556208668e",
-                        "_Resource": "assets:/GameDesign/Stage/st401/Layout/Loaded/Enemy/SubBoss/st401_SubBoss_Ms006025_00.pog.json"
-                    },
-                    "_ZakoLayoutID": {
-                        "_ID": "00000000-0000-0000-0000-000000000000",
-                        "_Resource": null
-                    },
-                    "_ZakoLayoutTag": {
                         "_FieldID": {
                             "_Name": getLocationName(questLocation),
                             "_Value": parseInt(questLocation)
                         },
-                        "_IsIntentionallyBlank": false,
-                        "_Value": 4
-                    }
-                },
-                "_DataList": {
-                    "_AddPoint": 198,
-                    "_ArenaFenceCloseTime": 60,
-                    "_ArenaFenceInitWaitTime": 60,
-                    "_ArenaFenceReuseableTime": 120,
-                    "_ArenaFenceStatus": "OPEN",
-                    "_ArenaPillarStatus": "USE",
-                    "_BattleBGM": 0,
-                    "_BossRushParams": [],
-                    "_BossRushParams=": null,
-                    "_ClearBGM": 0,
-                    "_ClearCondition": {
-                        "_TargetInfoArray": selectedMonsters.map((monster, index) => ({
-                            "_ConditionalMoveData": {
-                                "_DestArray": [],
-                                "_IsUse": false,
-                                "_RevertOnCompleted": false,
-                                "_StartAfterFirstCondition": false
+                        "_MainTargetDataList": selectedMonsters.map((monster, index) => ({
+                            "_AdvancedSettings": {
+                                "_IsDeepSleepCreate": false
                             },
-                            "_EmTargetID": 101 + index,
+                            "_AreaNo": 255,
+                            "_DifficultyAdjustRange": 0,
+                            "_DifficultyRankId": {
+                                "Name": `★${questLevel}`,
+                                "Value": "aa92e87f-9a58-4a8f-8613-c00ddb9e763a"
+                            },
+                            "_EmID": monster.fixedId,
+                            "_EventTargetID": "INVALID",
+                            "_FixedSize": 100,
+                            "_GroupID": 0,
+                            "_InitPos": "(-326,-28,176)",
+                            "_IsUseRandomSize": false,
+                            "_LayoutKeepID": -1,
                             "_LegendaryID": "NORMAL",
+                            "_OptionTag": {
+                                "Value": 0
+                            },
+                            "_RandomSizeTblId": {
+                                "Name": "",
+                                "Value": "f8f74ab0-0002-0000-00000002003e203e"
+                            },
                             "_RoleID": "NORMAL",
-                            "_ShowTargetGuide": true,
-                            "_TargetIDValue": monster.fixedId,
-                            "_TargetValue": 1
+                            "_RouteID": {
+                                "Name": "斗技场",
+                                "_Value": "7ae19f9f-f315-4f16-cc4fc595f9f7c483"
+                            },
+                            "_SetAreaNo": 255,
+                            "_StoryTargetID": 101 + index
                         })),
-                        "_TargetType": 1
-                    },
-                    "_EnableGuestNpc": false,
-                    "_ExOverrideID": 0,
-                    "_HRPoint": hrPoints,
-                    "_IconType": {
-                        "_Name": "app.QuestDef.QUEST_ICON_TYPE_Fixed",
-                        "_Value": 1927315328
-                    },
-                    "_Index": 0,
-                    "_IsOverrideArenaFenceParam": false,
-                    "_IsOverrideArenaPillarParam": false,
-                    "_IsSettingSupply": false,
-                    "_MissionId": {
-                        "_Name": questTitle,
-                        "_Value": questId
-                    },
-                    "_OrderCondition": {
-                        "_MaxPlayerNum": 4,
-                        "_OrderHR": 21,
-                        "_OrderMR": 0,
-                        "_PremiseMission": {
-                            "_Name": "前置任务ID",
-                            "_Value": -282127296
-                        }
-                    },
-                    "_PartnerNpc": {
-                        "_Name": "無効値",
-                        "_Value": 4
-                    },
-                    "_QuestAttribute": 0,
-                    "_QuestLife": 2,
-                    "_QuestLv": questLevel,
-                    "_QuestMsg": {
-                        "_ClearConditionMsg": {
-                            "_IsAuto": true,
-                            "_MsgID": "00000000-0000-0000-0000-000000000000"
+                        "_SubBossLayoutID": {
+                            "_ID": "c8ed5a65-8c96-48cb-3a15eb556208668e",
+                            "_Resource": "assets:/GameDesign/Stage/st401/Layout/Loaded/Enemy/SubBoss/st401_SubBoss_Ms006025_00.pog.json"
                         },
-                        "_ClientNameMsg": "9707f537-aadd-4e0e-983a-8ec7c72fc1fb",
-                        "_DetailMsg": "b15f3acb-b6ca-4e18-968b-2a5161f9679f",
-                        "_FailConditionMsg": {
-                            "_IsAuto": true,
-                            "_MsgIDs": [
-                                "00000000-0000-0000-0000-000000000000",
-                                "00000000-0000-0000-0000-000000000000"
-                            ]
+                        "_ZakoLayoutID": {
+                            "_ID": "00000000-0000-0000-0000-000000000000",
+                            "_Resource": null
                         },
-                        "_FailConditionMsg_Other": "1e801eb7-04d4-4ebe-9423-62e633c1b3ee",
-                        "_OrderConditionMsg": {
-                            "_IsAuto": true,
-                            "_MsgIDs": [
-                                "00000000-0000-0000-0000-000000000000",
-                                "00000000-0000-0000-0000-000000000000"
-                            ]
-                        },
-                        "_OrderConditionMsg_Other": "acbf575d-58a2-46a4-bd33-af9eb4d105be",
-                        "_OrderConditionMsg_StProgress": "7d277c75-8e3e-4073-9351-072604943ce6",
-                        "_TitleMsg": "ad16cdce-1ad5-4ba9-8ac2-4cee6dd52021"
-                    },
-                    "_QuestType": 0,
-                    "_RemMoney": rewardMoney,
-                    "_Stage": {
-                        "_Name": getLocationName(questLocation),
-                        "_Value": parseInt(questLocation)
-                    },
-                    "_SubBossInfoArray": [],
-                    "_SubBossInfoArray=": null,
-                    "_SupplyID": {
-                        "_Name": "無効値",
-                        "_Value": 1966686080
-                    },
-                    "_TimeLimit": timeLimit,
-                    "_Version": 1
-                },
-                "_IsRecommended": false,
-                "_MessageAssetList": [
-                    {
-                        "Language": 13, // Chinese
-                        "MessageData": [
-                            {"Name": "Mission600016_000", "Text": ""},
-                            {"Name": "Mission600016_001", "Text": ""},
-                            {"Name": "Mission600016_100", "Text": questTitle},
-                            {"Name": "Mission600016_101", "Text": "Custom Quest Generator"},
-                            {"Name": "Mission600016_102", "Text": questDescription},
-                            {"Name": "Mission600016_122", "Text": ""},
-                            {"Name": "Mission600016_123", "Text": ""},
-                            {"Name": "Mission600016_132", "Text": ""}
-                        ]
-                    },
-                    {
-                        "Language": 1, // English
-                        "MessageData": [
-                            {"Name": "Mission600016_000", "Text": ""},
-                            {"Name": "Mission600016_001", "Text": ""},
-                            {"Name": "Mission600016_100", "Text": questTitle},
-                            {"Name": "Mission600016_101", "Text": "Custom Quest Generator"},
-                            {"Name": "Mission600016_102", "Text": questDescription},
-                            {"Name": "Mission600016_122", "Text": ""},
-                            {"Name": "Mission600016_123", "Text": ""},
-                            {"Name": "Mission600016_132", "Text": ""}
-                        ]
-                    },
-                    {
-                        "Language": 0, // Japanese
-                        "MessageData": [
-                            {"Name": "Mission600016_000", "Text": ""},
-                            {"Name": "Mission600016_001", "Text": ""},
-                            {"Name": "Mission600016_100", "Text": questTitle},
-                            {"Name": "Mission600016_101", "Text": "Custom Quest Generator"},
-                            {"Name": "Mission600016_102", "Text": questDescription},
-                            {"Name": "Mission600016_122", "Text": ""},
-                            {"Name": "Mission600016_123", "Text": ""},
-                            {"Name": "Mission600016_132", "Text": ""}
-                        ]
-                    }
-                ],
-                "_StreamQuestData": {
-                    "_EmSetData": {
-                        "_EmSet_AnimalTag": {
+                        "_ZakoLayoutTag": {
                             "_FieldID": {
                                 "_Name": getLocationName(questLocation),
                                 "_Value": parseInt(questLocation)
                             },
-                            "_Value": 1
+                            "_IsIntentionallyBlank": false,
+                            "_Value": 4
+                        }
+                    },
+                    "_DataList": {
+                        "_AddPoint": 198,
+                        "_ArenaFenceCloseTime": 60,
+                        "_ArenaFenceInitWaitTime": 60,
+                        "_ArenaFenceReuseableTime": 120,
+                        "_ArenaFenceStatus": "OPEN",
+                        "_ArenaPillarStatus": "USE",
+                        "_BattleBGM": 0,
+                        "_BossRushParams": [],
+                        "_BossRushParams=": null,
+                        "_ClearBGM": 0,
+                        "_ClearCondition": {
+                            "_TargetInfoArray": selectedMonsters.map((monster, index) => ({
+                                "_ConditionalMoveData": {
+                                    "_DestArray": [],
+                                    "_IsUse": false,
+                                    "_RevertOnCompleted": false,
+                                    "_StartAfterFirstCondition": false
+                                },
+                                "_EmTargetID": 101 + index,
+                                "_LegendaryID": "NORMAL",
+                                "_RoleID": "NORMAL",
+                                "_ShowTargetGuide": true,
+                                "_TargetIDValue": monster.fixedId,
+                                "_TargetValue": 1
+                            })),
+                            "_TargetType": 1
                         },
-                        "_EmSet_BossZako": null,
+                        "_EnableGuestNpc": false,
+                        "_ExOverrideID": 0,
+                        "_HRPoint": hrPoints,
+                        "_IconType": {
+                            "_Name": "app.QuestDef.QUEST_ICON_TYPE_Fixed",
+                            "_Value": 1927315328
+                        },
+                        "_Index": 0,
+                        "_IsOverrideArenaFenceParam": false,
+                        "_IsOverrideArenaPillarParam": false,
+                        "_IsSettingSupply": false,
+                        "_MissionId": {
+                            "_Name": questTitle,
+                            "_Value": questId
+                        },
+                        "_OrderCondition": {
+                            "_MaxPlayerNum": 4,
+                            "_OrderHR": 21,
+                            "_OrderMR": 0,
+                            "_PremiseMission": {
+                                "_Name": "前置任务ID",
+                                "_Value": -282127296
+                            }
+                        },
+                        "_PartnerNpc": {
+                            "_Name": "無効値",
+                            "_Value": 4
+                        },
+                        "_QuestAttribute": 0,
+                        "_QuestLife": 2,
+                        "_QuestLv": questLevel,
+                        "_QuestMsg": {
+                            "_ClearConditionMsg": {
+                                "_IsAuto": true,
+                                "_MsgID": "00000000-0000-0000-0000-000000000000"
+                            },
+                            "_ClientNameMsg": "9707f537-aadd-4e0e-983a-8ec7c72fc1fb",
+                            "_DetailMsg": "b15f3acb-b6ca-4e18-968b-2a5161f9679f",
+                            "_FailConditionMsg": {
+                                "_IsAuto": true,
+                                "_MsgIDs": [
+                                    "00000000-0000-0000-0000-000000000000",
+                                    "00000000-0000-0000-0000-000000000000"
+                                ]
+                            },
+                            "_FailConditionMsg_Other": "1e801eb7-04d4-4ebe-9423-62e633c1b3ee",
+                            "_OrderConditionMsg": {
+                                "_IsAuto": true,
+                                "_MsgIDs": [
+                                    "00000000-0000-0000-0000-000000000000",
+                                    "00000000-0000-0000-0000-000000000000"
+                                ]
+                            },
+                            "_OrderConditionMsg_Other": "acbf575d-58a2-46a4-bd33-af9eb4d105be",
+                            "_OrderConditionMsg_StProgress": "7d277c75-8e3e-4073-9351-072604943ce6",
+                            "_TitleMsg": "ad16cdce-1ad5-4ba9-8ac2-4cee6dd52021"
+                        },
+                        "_QuestType": 0,
+                        "_RemMoney": rewardMoney,
                         "_Stage": {
                             "_Name": getLocationName(questLocation),
                             "_Value": parseInt(questLocation)
-                        }
+                        },
+                        "_SubBossInfoArray": [],
+                        "_SubBossInfoArray=": null,
+                        "_SupplyID": {
+                            "_Name": "無効値",
+                            "_Value": 1966686080
+                        },
+                        "_TimeLimit": timeLimit,
+                        "_Version": 1
                     },
-                    "_IsFixWorldTime": false,
-                    "_IsFixWorldTimeQuest": false,
-                    "_IsSetWorldTime": false,
-                    "_IsSetWorldTimeQuest": true,
-                    "_IsStopTimeTiming": false,
-                    "_IsStopTimeTimingQuest": false,
-                    "_MissionTypeSerial": {
-                        "_Name": "活动任务类型",
-                        "_Value": 1025928384
-                    },
-                    "_SetEnvironmentDataList": [
+                    "_IsRecommended": false,
+                    "_MessageAssetList": [
                         {
-                            "_EnvTimeRate": 0,
-                            "_EnvType": {
-                                "_Name": "荒廃期",
-                                "_Value": 1961958400
-                            },
-                            "_ForcastDatas": [],
-                            "_IsFixEnv": false,
-                            "_IsTransitionEnv": false,
-                            "_StageType": {
-                                "_Name": getLocationName(questLocation),
-                                "_Value": parseInt(questLocation)
-                            },
-                            "_StopTiming_EnvType": {
-                                "_Name": "無効値",
-                                "_Value": 2110947200
-                            }
+                            "Language": 13, // Chinese
+                            "MessageData": [
+                                {"Name": "Mission600016_000", "Text": ""},
+                                {"Name": "Mission600016_001", "Text": ""},
+                                {"Name": "Mission600016_100", "Text": questTitle},
+                                {"Name": "Mission600016_101", "Text": "Custom Quest Generator"},
+                                {"Name": "Mission600016_102", "Text": questDescription},
+                                {"Name": "Mission600016_122", "Text": ""},
+                                {"Name": "Mission600016_123", "Text": ""},
+                                {"Name": "Mission600016_132", "Text": ""}
+                            ]
+                        },
+                        {
+                            "Language": 1, // English
+                            "MessageData": [
+                                {"Name": "Mission600016_000", "Text": ""},
+                                {"Name": "Mission600016_001", "Text": ""},
+                                {"Name": "Mission600016_100", "Text": questTitle},
+                                {"Name": "Mission600016_101", "Text": "Custom Quest Generator"},
+                                {"Name": "Mission600016_102", "Text": questDescription},
+                                {"Name": "Mission600016_122", "Text": ""},
+                                {"Name": "Mission600016_123", "Text": ""},
+                                {"Name": "Mission600016_132", "Text": ""}
+                            ]
+                        },
+                        {
+                            "Language": 0, // Japanese
+                            "MessageData": [
+                                {"Name": "Mission600016_000", "Text": ""},
+                                {"Name": "Mission600016_001", "Text": ""},
+                                {"Name": "Mission600016_100", "Text": questTitle},
+                                {"Name": "Mission600016_101", "Text": "Custom Quest Generator"},
+                                {"Name": "Mission600016_102", "Text": questDescription},
+                                {"Name": "Mission600016_122", "Text": ""},
+                                {"Name": "Mission600016_123", "Text": ""},
+                                {"Name": "Mission600016_132", "Text": ""}
+                            ]
                         }
                     ],
-                    "_SetLGuideMsgData": {
-                        "IsSubOrder": false,
-                        "SetMsgID": "00000000-0000-0000-0000-000000000000",
-                        "gaugeSpritNum": 0,
-                        "isCanSkip": false,
-                        "isGauge": false
-                    },
-                    "_SetMoonData": {
-                        "_IsSetMoon": false,
-                        "_MoonOptionsVariationIndex": 0,
-                        "_MoonSetting": {
-                            "_Name": "無効値",
-                            "_Value": -770399616
+                    "_StreamQuestData": {
+                        "_EmSetData": {
+                            "_EmSet_AnimalTag": {
+                                "_FieldID": {
+                                    "_Name": getLocationName(questLocation),
+                                    "_Value": parseInt(questLocation)
+                                },
+                                "_Value": 1
+                            },
+                            "_EmSet_BossZako": null,
+                            "_Stage": {
+                                "_Name": getLocationName(questLocation),
+                                "_Value": parseInt(questLocation)
+                            }
                         },
-                        "_MoonTextureVariationIndex": 0
-                    },
-                    "_StopTimeTimingHour": 0,
-                    "_StopTimeTimingHourQuest": 0,
-                    "_StopTimeTimingMinute": 0,
-                    "_StopTimeTimingMinuteQuest": 0,
-                    "_WorldTimeHour": 0,
-                    "_WorldTimeHourQuest": 21,
-                    "_WorldTimeMinute": 0,
-                    "_WorldTimeMinuteQuest": 0
+                        "_IsFixWorldTime": false,
+                        "_IsFixWorldTimeQuest": false,
+                        "_IsSetWorldTime": false,
+                        "_IsSetWorldTimeQuest": true,
+                        "_IsStopTimeTiming": false,
+                        "_IsStopTimeTimingQuest": false,
+                        "_MissionTypeSerial": {
+                            "_Name": "活动任务类型",
+                            "_Value": 1025928384
+                        },
+                        "_SetEnvironmentDataList": [
+                            {
+                                "_EnvTimeRate": 0,
+                                "_EnvType": {
+                                    "_Name": "荒廃期",
+                                    "_Value": 1961958400
+                                },
+                                "_ForcastDatas": [],
+                                "_IsFixEnv": false,
+                                "_IsTransitionEnv": false,
+                                "_StageType": {
+                                    "_Name": getLocationName(questLocation),
+                                    "_Value": parseInt(questLocation)
+                                },
+                                "_StopTiming_EnvType": {
+                                    "_Name": "無効値",
+                                    "_Value": 2110947200
+                                }
+                            }
+                        ],
+                        "_SetLGuideMsgData": {
+                            "IsSubOrder": false,
+                            "SetMsgID": "00000000-0000-0000-0000-000000000000",
+                            "gaugeSpritNum": 0,
+                            "isCanSkip": false,
+                            "isGauge": false
+                        },
+                        "_SetMoonData": {
+                            "_IsSetMoon": false,
+                            "_MoonOptionsVariationIndex": 0,
+                            "_MoonSetting": {
+                                "_Name": "無効値",
+                                "_Value": -770399616
+                            },
+                            "_MoonTextureVariationIndex": 0
+                        },
+                        "_StopTimeTimingHour": 0,
+                        "_StopTimeTimingHourQuest": 0,
+                        "_StopTimeTimingMinute": 0,
+                        "_StopTimeTimingMinuteQuest": 0,
+                        "_WorldTimeHour": 0,
+                        "_WorldTimeHourQuest": 21,
+                        "_WorldTimeMinute": 0,
+                        "_WorldTimeMinuteQuest": 0
+                    }
+                };
+                
+                // Generate the ext quest data
+                const extData = {
+                    "questId": questId,
+                    "rewardId": 520,
+                    "rewardItems": rewardItems.map(item => ({
+                        "itemId": item.itemId,
+                        "itemName": item.itemName,
+                        "minCount": item.minCount,
+                        "maxCount": item.maxCount,
+                        "probability": item.probability
+                    }))
+                };
+                
+                // Store the generated quest data
+                questData.raw = rawData;
+                questData.ext = extData;
+                
+                // Display the quest data in the output area
+                const outputElement = document.getElementById('output');
+                if (outputElement) {
+                    outputElement.textContent = JSON.stringify(questData, null, 4);
+                } else {
+                    console.error("Output element not found");
                 }
-            };
-            
-            // Generate the ext quest data
-            const extData = {
-                "questId": questId,
-                "rewardId": 520,
-                "rewardItems": rewardItems.map(item => ({
-                    "itemId": item.itemId,
-                    "itemName": item.itemName,
-                    "minCount": item.minCount,
-                    "maxCount": item.maxCount,
-                    "probability": item.probability
-                }))
-            };
-            
-            // Store the generated quest data
-            questData.raw = rawData;
-            questData.ext = extData;
-            
-            // Display the quest data
-            document.getElementById('output').textContent = JSON.stringify(questData, null, 4);
-            
-            // Update the quest summary
-            updateQuestSummary();
-            
-            // Enable the download button
-            document.getElementById('download-btn').disabled = false;
+                
+                // Find download button and enable it
+                const downloadButton = document.getElementById('download-btn');
+                if (downloadButton) {
+                    downloadButton.disabled = false;
+                } else {
+                    console.error("Download button not found");
+                }
+                
+                // Create a simple quest summary for the preview area
+                const questPreview = document.getElementById('quest-preview');
+                if (questPreview) {
+                    let monsterNames = selectedMonsters.map(monster => 
+                        monster.name && monster.name[currentLanguage] ? 
+                            monster.name[currentLanguage] : 'Unknown Monster'
+                    ).join(", ");
+                    
+                    let rewardsList = rewardItems.map(reward => 
+                        `${reward.itemName} (x${reward.minCount}-${reward.maxCount}) - ${reward.probability}%`
+                    ).join(", ");
+                    
+                    let summary = `
+                        <h3>Quest Summary</h3>
+                        <div>
+                            <div><strong>Title:</strong> ${questTitle}</div>
+                            <div><strong>ID:</strong> ${questId}</div>
+                            <div><strong>Level:</strong> ★${questLevel}</div>
+                            <div><strong>Location:</strong> ${getLocationName(questLocation)}</div>
+                            <div><strong>Time Limit:</strong> ${timeLimit} minutes</div>
+                            <div><strong>Reward Money:</strong> ${rewardMoney}</div>
+                            <div><strong>HR Points:</strong> ${hrPoints}</div>
+                            <div><strong>Monsters:</strong> ${monsterNames}</div>
+                            <div><strong>Rewards:</strong> ${rewardsList}</div>
+                        </div>
+                    `;
+                    
+                    questPreview.innerHTML = summary;
+                } else {
+                    console.error("Quest preview element not found");
+                }
+                
+                showAlert("Quest generated successfully!", "success");
+            } catch (error) {
+                console.error("Error generating quest:", error);
+                showAlert("Error generating quest: " + error.message, "error");
+            }
         }
 
         // Update the quest summary
@@ -1150,10 +1216,26 @@
             return codes[language] || 1;
         }
 
-        function showAlert(message) {
+        function showAlert(message, type = 'error') {
             const alert = document.getElementById('alert-message');
+            if (!alert) {
+                console.error("Alert element not found");
+                return;
+            }
+            
             alert.textContent = message;
             alert.style.display = 'block';
+            
+            // Change color based on alert type
+            if (type === 'success') {
+                alert.style.backgroundColor = '#d4edda';
+                alert.style.borderColor = '#c3e6cb';
+                alert.style.color = '#155724';
+            } else {
+                alert.style.backgroundColor = '#f8d7da';
+                alert.style.borderColor = '#f5c6cb';
+                alert.style.color = '#721c24';
+            }
             
             setTimeout(() => {
                 alert.style.display = 'none';
