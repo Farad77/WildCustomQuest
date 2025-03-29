@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monster Hunter Wild - Custom Quest Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #9d2929;
+        }
+        .container {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .monster-card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: #fff;
+        }
+        .monster-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .monster-card.selected {
+            background-color: #f0f8ff;
+            border-color: #007bff;
+        }
+        .reward-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            position: relative;
+        }
+        .reward-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 10px;
+            align-items: center;
+        }
+        .reward-item input[type="number"] {
+            width: 100%;
+        }
+        .reward-item select {
+            width: 100%;
+        }
+        .reward-item button {
+            background-color: #ff5252;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: absolute;
+            right: -10px;
+            top: -10px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #9d2929;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #7a2020;
+        }
+        button.secondary {
+            background-color: #6c757d;
+        }
+        button.secondary:hover {
+            background-color: #545b62;
+        }
+        #searchMonster, #searchItem {
+            padding: 8px;
+            margin-bottom: 15px;
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            margin-right: 5px;
+            border-radius: 5px 5px 0 0;
+            background-color: #f8f9fa;
+        }
+        .tab.active {
+            background-color: #fff;
+            border-color: #ddd;
+            margin-bottom: -1px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .language-selector {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        .preview {
+            background-color: #f0f8ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            border: 1px solid #b8daff;
+        }
+        .preview h3 {
+            margin-top: 0;
+            color: #004085;
+        }
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="language-selector">
+        <select id="language">
+            <option value="en">English</option>
+            <option value="jp">日本語</option>
+            <option value="cn">中文</option>
+        </select>
+    </div>
+
+    <h1>Monster Hunter Wild - Custom Quest Generator</h1>
+    
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" data-tab="quest-info">Quest Info</div>
+            <div class="tab" data-tab="monsters">Monsters</div>
+            <div class="tab" data-tab="rewards">Rewards</div>
+            <div class="tab" data-tab="output">Generate & Export</div>
+        </div>
+        
+        <div class="alert" id="alert-message"></div>
+        
+        <div class="tab-content active" id="quest-info">
+            <h2>Basic Quest Information</h2>
+            <div class="form-group">
+                <label for="questId">Quest ID:</label>
+                <input type="number" id="questId" placeholder="Enter a unique ID (e.g. 10086)" value="10086">
+            </div>
+            <div class="form-group">
+                <label for="questTitle">Quest Title:</label>
+                <input type="text" id="questTitle" placeholder="Enter quest title">
+            </div>
+            <div class="form-group">
+                <label for="questDescription">Quest Description:</label>
+                <textarea id="questDescription" rows="4" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="questLevel">Quest Level (★):</label>
+                <select id="questLevel">
+                    <option value="1">★1</option>
+                    <option value="2">★2</option>
+                    <option value="3">★3</option>
+                    <option value="4">★4</option>
+                    <option value="5">★5</option>
+                    <option value="6">★6</option>
+                    <option value="7">★7</option>
+                    <option value="8" selected>★8</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="questLocation">Location:</label>
+                <select id="questLocation">
+                    <option value="1181994624">Arena (st401)</option>
+                    <option value="1198037248">Windward Plains</option>
+                    <option value="1180946048">Scarlet Forest</option>
+                    <option value="1179897472">Oilwell Basin</option>
+                    <option value="1182777600">Cliffside Caverns</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="timeLimit">Time Limit (minutes):</label>
+                <input type="number" id="timeLimit" min="5" max="50" value="20">
+            </div>
+            <div class="form-group">
+                <label for="rewardMoney">Money Reward:</label>
+                <input type="number" id="rewardMoney" min="1000" step="1000" value="24000">
+            </div>
+            <div class="form-group">
+                <label for="hrPoints">HR Points:</label>
+                <input type="number" id="hrPoints" min="100" step="10" value="660">
+            </div>
+            <div class="button-group">
+                <button onclick="nextTab('monsters')">Next: Select Monsters</button>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="monsters">
+            <h2>Select Monsters</h2>
+            <input type="text" id="searchMonster" placeholder="Search monsters...">
+            <div class="grid" id="monster-list">
+                <!-- Monster cards will be populated by JavaScript -->
+            </div>
+            <div class="preview" id="monster-preview">
+                <h3>Selected Monsters:</h3>
+                <p>No monsters selected</p>
+            </div>
+            <div class="button-group">
+                <button class="secondary" onclick="previousTab('quest-info')">Previous</button>
+                <button onclick="nextTab('rewards')">Next: Set Rewards</button>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="rewards">
+            <h2>Quest Rewards</h2>
+            <input type="text" id="searchItem" placeholder="Search items...">
+            <div id="reward-items">
+                <!-- Reward items will be added here -->
+            </div>
+            <button onclick="addReward()" style="margin-top: 15px;">+ Add Reward Item</button>
+            <div class="button-group">
+                <button class="secondary" onclick="previousTab('monsters')">Previous</button>
+                <button onclick="nextTab('output')">Next: Generate Quest</button>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="output">
+            <h2>Generated Quest</h2>
+            <div class="preview" id="quest-preview">
+                <h3>Quest Summary</h3>
+                <div id="quest-summary">
+                    <!-- Quest summary will be displayed here -->
+                </div>
+            </div>
+            <div class="button-group">
+                <button class="secondary" onclick="previousTab('rewards')">Previous</button>
+                <button onclick="generateQuest()">Generate Quest Files</button>
+                <button onclick="downloadQuest()" id="download-btn" disabled>Download Quest Files</button>
+            </div>
+            <h3>Raw JSON Output:</h3>
+            <pre id="output"></pre>
+        </div>
+    </div>
+
+    <script>
+        // Store data from JSON files
+        let enemiesData = [];
+        let itemsData = [];
+        let rewardListData = {};
+        let selectedMonsters = [];
+        let rewardItems = [];
+        let currentLanguage = 'en';
+        let questData = {
+            raw: null,
+            ext: null
+        };
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            setupEventListeners();
+        });
+
+        // Load data from JSON files
+        async function loadData() {
+            try {
+                // Load enemies data
+                const enemiesResponse = await fetch('enemies.json');
+                enemiesData = await enemiesResponse.json();
+                
+                // Load items data
+                const itemsResponse = await fetch('items.json');
+                itemsData = await itemsResponse.json();
+                
+                // Load reward list data
+                const rewardResponse = await fetch('reward_list_en.json');
+                rewardListData = await rewardResponse.json();
+                
+                // Initialize the UI
+                populateMonsterList();
+            } catch (error) {
+                showAlert("Error loading data: " + error.message);
+                console.error("Error loading data:", error);
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Tab navigation
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.dataset.tab;
+                    activateTab(tabId);
+                });
+            });
+
+            // Search functionality
+            document.getElementById('searchMonster').addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                filterMonsters(searchTerm);
+            });
+
+            document.getElementById('searchItem').addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                filterItems(searchTerm);
+            });
+
+            // Language selector
+            document.getElementById('language').addEventListener('change', function() {
+                currentLanguage = this.value;
+                populateMonsterList();
+                updateMonsterPreview();
+                updateRewardItemNames();
+            });
+        }
+
+        // Tab navigation functions
+        function activateTab(tabId) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Deactivate all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Activate the selected tab and its content
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+        }
+
+        function nextTab(tabId) {
+            activateTab(tabId);
+        }
+
+        function previousTab(tabId) {
+            activateTab(tabId);
+        }
+
+        // Populate monster list
+        function populateMonsterList() {
+            const monsterList = document.getElementById('monster-list');
+            monsterList.innerHTML = '';
+
+            enemiesData.forEach(monster => {
+                // Skip monsters with empty names
+                if (!monster.name[currentLanguage]) return;
+                
+                const card = document.createElement('div');
+                card.className = 'monster-card';
+                card.dataset.monsterId = monster.fixedId;
+                card.dataset.monsterLabel = monster.label;
+                
+                // Check if this monster is already selected
+                if (selectedMonsters.some(m => m.fixedId === monster.fixedId)) {
+                    card.classList.add('selected');
+                }
+                
+                card.innerHTML = `
+                    <h3>${monster.name[currentLanguage]}</h3>
+                    <p>ID: ${monster.fixedId}</p>
+                    <p>Label: ${monster.label}</p>
+                `;
+                
+                card.addEventListener('click', function() {
+                    toggleMonsterSelection(monster);
+                    card.classList.toggle('selected');
+                });
+                
+                monsterList.appendChild(card);
+            });
+        }
+
+        // Filter monsters based on search term
+        function filterMonsters(searchTerm) {
+            const monsterCards = document.querySelectorAll('.monster-card');
+            
+            monsterCards.forEach(card => {
+                const monsterName = card.querySelector('h3').textContent.toLowerCase();
+                const monsterId = card.dataset.monsterId;
+                const monsterLabel = card.dataset.monsterLabel.toLowerCase();
+                
+                if (monsterName.includes(searchTerm) || monsterId.includes(searchTerm) || monsterLabel.includes(searchTerm)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Toggle monster selection
+        function toggleMonsterSelection(monster) {
+            const index = selectedMonsters.findIndex(m => m.fixedId === monster.fixedId);
+            
+            if (index === -1) {
+                // Add monster if not already in the list
+                selectedMonsters.push(monster);
+            } else {
+                // Remove monster if already in the list
+                selectedMonsters.splice(index, 1);
+            }
+            
+            updateMonsterPreview();
+        }
+
+        // Update monster preview
+        function updateMonsterPreview() {
+            const preview = document.getElementById('monster-preview');
+            
+            if (selectedMonsters.length === 0) {
+                preview.innerHTML = '<h3>Selected Monsters:</h3><p>No monsters selected</p>';
+                return;
+            }
+            
+            let html = '<h3>Selected Monsters:</h3><ol>';
+            
+            selectedMonsters.forEach(monster => {
+                html += `<li>${monster.name[currentLanguage]} (${monster.label})</li>`;
+            });
+            
+            html += '</ol>';
+            preview.innerHTML = html;
+        }
+
+        // Add a reward item
+        function addReward() {
+            const rewardContainer = document.getElementById('reward-items');
+            const rewardIndex = rewardItems.length;
+            
+            // Create a new reward item object
+            const newReward = {
+                itemId: itemsData[0].id,
+                itemName: itemsData[0].name[currentLanguage],
+                minCount: 1,
+                maxCount: 1,
+                probability: 100
+            };
+            
+            rewardItems.push(newReward);
+            
+            // Create the reward item element
+            const rewardElement = document.createElement('div');
+            rewardElement.className = 'reward-item';
+            rewardElement.dataset.index = rewardIndex;
+            
+            rewardElement.innerHTML = `
+                <div class="reward-controls">
+                    <select class="item-select" onchange="updateRewardItem(${rewardIndex}, 'itemId', this.value)">
+                        ${itemsData.map(item => `
+                            <option value="${item.id}" ${item.id === newReward.itemId ? 'selected' : ''}>
+                                ${item.name[currentLanguage] || '---'}
+                            </option>
+                        `).join('')}
+                    </select>
+                    <input type="number" placeholder="Min" min="1" value="${newReward.minCount}" 
+                        onchange="updateRewardItem(${rewardIndex}, 'minCount', this.value)">
+                    <input type="number" placeholder="Max" min="1" value="${newReward.maxCount}" 
+                        onchange="updateRewardItem(${rewardIndex}, 'maxCount', this.value)">
+                    <input type="number" placeholder="Probability %" min="1" max="100" value="${newReward.probability}" 
+                        onchange="updateRewardItem(${rewardIndex}, 'probability', this.value)">
+                </div>
+                <button onclick="removeRewardItem(${rewardIndex})">×</button>
+            `;
+            
+            rewardContainer.appendChild(rewardElement);
+        }
+
+        // Update a reward item
+        function updateRewardItem(index, property, value) {
+            if (index >= rewardItems.length) return;
+            
+            if (property === 'itemId') {
+                const selectedItem = itemsData.find(item => item.id == value);
+                if (selectedItem) {
+                    rewardItems[index].itemId = parseInt(value);
+                    rewardItems[index].itemName = selectedItem.name[currentLanguage];
+                }
+            } else if (property === 'minCount' || property === 'maxCount') {
+                rewardItems[index][property] = parseInt(value);
+                
+                // Ensure minCount is not greater than maxCount
+                if (rewardItems[index].minCount > rewardItems[index].maxCount) {
+                    rewardItems[index].maxCount = rewardItems[index].minCount;
+                    const rewardElement = document.querySelector(`.reward-item[data-index="${index}"]`);
+                    const maxInput = rewardElement.querySelectorAll('input')[1];
+                    maxInput.value = rewardItems[index].maxCount;
+                }
+            } else if (property === 'probability') {
+                rewardItems[index][property] = parseInt(value);
+                
+                // Ensure probability is between 1 and 100
+                if (rewardItems[index].probability < 1) rewardItems[index].probability = 1;
+                if (rewardItems[index].probability > 100) rewardItems[index].probability = 100;
+            }
+        }
+
+        // Remove a reward item
+        function removeRewardItem(index) {
+            rewardItems.splice(index, 1);
+            
+            // Recreate all reward items to update indices
+            const rewardContainer = document.getElementById('reward-items');
+            rewardContainer.innerHTML = '';
+            
+            rewardItems.forEach((item, idx) => {
+                const rewardElement = document.createElement('div');
+                rewardElement.className = 'reward-item';
+                rewardElement.dataset.index = idx;
+                
+                rewardElement.innerHTML = `
+                    <div class="reward-controls">
+                        <select class="item-select" onchange="updateRewardItem(${idx}, 'itemId', this.value)">
+                            ${itemsData.map(menuItem => `
+                                <option value="${menuItem.id}" ${menuItem.id === item.itemId ? 'selected' : ''}>
+                                    ${menuItem.name[currentLanguage] || '---'}
+                                </option>
+                            `).join('')}
+                        </select>
+                        <input type="number" placeholder="Min" min="1" value="${item.minCount}" 
+                            onchange="updateRewardItem(${idx}, 'minCount', this.value)">
+                        <input type="number" placeholder="Max" min="1" value="${item.maxCount}" 
+                            onchange="updateRewardItem(${idx}, 'maxCount', this.value)">
+                        <input type="number" placeholder="Probability %" min="1" max="100" value="${item.probability}" 
+                            onchange="updateRewardItem(${idx}, 'probability', this.value)">
+                    </div>
+                    <button onclick="removeRewardItem(${idx})">×</button>
+                `;
+                
+                rewardContainer.appendChild(rewardElement);
+            });
+        }
+
+        // Update reward item names when language changes
+        function updateRewardItemNames() {
+            rewardItems.forEach((item, index) => {
+                const selectedItem = itemsData.find(menuItem => menuItem.id === item.itemId);
+                if (selectedItem) {
+                    item.itemName = selectedItem.name[currentLanguage];
+                    
+                    const rewardElement = document.querySelector(`.reward-item[data-index="${index}"]`);
+                    if (rewardElement) {
+                        const select = rewardElement.querySelector('select');
+                        select.innerHTML = itemsData.map(menuItem => `
+                            <option value="${menuItem.id}" ${menuItem.id === item.itemId ? 'selected' : ''}>
+                                ${menuItem.name[currentLanguage] || '---'}
+                            </option>
+                        `).join('');
+                    }
+                }
+            });
+        }
+
+        // Filter items based on search term
+        function filterItems(searchTerm) {
+            const itemSelects = document.querySelectorAll('.item-select');
+            
+            itemSelects.forEach(select => {
+                Array.from(select.options).forEach(option => {
+                    const itemName = option.textContent.toLowerCase();
+                    const itemId = option.value;
+                    
+                    if (itemName.includes(searchTerm) || itemId.includes(searchTerm)) {
+                        option.style.display = '';
+                    } else {
+                        option.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // Generate quest
+        function generateQuest() {
+            // Validate inputs
+            if (selectedMonsters.length === 0) {
+                showAlert("Please select at least one monster");
+                return;
+            }
+            
+            if (rewardItems.length === 0) {
+                showAlert("Please add at least one reward item");
+                return;
+            }
+            
+            const questId = parseInt(document.getElementById('questId').value);
+            const questTitle = document.getElementById('questTitle').value || "Custom Quest";
+            const questDescription = document.getElementById('questDescription').value || "A custom monster hunt";
+            const questLevel = parseInt(document.getElementById('questLevel').value);
+            const questLocation = document.getElementById('questLocation').value;
+            const timeLimit = parseInt(document.getElementById('timeLimit').value);
+            const rewardMoney = parseInt(document.getElementById('rewardMoney').value);
+            const hrPoints = parseInt(document.getElementById('hrPoints').value);
+            
+            // Generate the raw quest data
+            const rawData = {
+                "_ArenaDataList": {
+                    "_IsUserCamp": false,
+                    "_MissionID": null,
+                    "_SelectDatas": null,
+                    "_SelectNpcDatas": null,
+                    "_TimeRankA": null,
+                    "_TimeRankB": null,
+                    "_TimeRankS": null
+                },
+                "_BossZakoDataList": {
+                    "_AnimalLayoutID": {
+                        "_ID": "00000000-0000-0000-0000-000000000000",
+                        "_Resource": null
+                    },
+                    "_FieldID": {
+                        "_Name": getLocationName(questLocation),
+                        "_Value": parseInt(questLocation)
+                    },
+                    "_MainTargetDataList": selectedMonsters.map((monster, index) => ({
+                        "_AdvancedSettings": {
+                            "_IsDeepSleepCreate": false
+                        },
+                        "_AreaNo": 255,
+                        "_DifficultyAdjustRange": 0,
+                        "_DifficultyRankId": {
+                            "Name": `★${questLevel}`,
+                            "Value": "aa92e87f-9a58-4a8f-8613-c00ddb9e763a"
+                        },
+                        "_EmID": monster.fixedId,
+                        "_EventTargetID": "INVALID",
+                        "_FixedSize": 100,
+                        "_GroupID": 0,
+                        "_InitPos": "(-326,-28,176)",
+                        "_IsUseRandomSize": false,
+                        "_LayoutKeepID": -1,
+                        "_LegendaryID": "NORMAL",
+                        "_OptionTag": {
+                            "Value": 0
+                        },
+                        "_RandomSizeTblId": {
+                            "Name": "",
+                            "Value": "f8f74ab0-0002-0000-00000002003e203e"
+                        },
+                        "_RoleID": "NORMAL",
+                        "_RouteID": {
+                            "Name": "斗技场",
+                            "_Value": "7ae19f9f-f315-4f16-cc4fc595f9f7c483"
+                        },
+                        "_SetAreaNo": 255,
+                        "_StoryTargetID": 101 + index
+                    })),
+                    "_SubBossLayoutID": {
+                        "_ID": "c8ed5a65-8c96-48cb-3a15eb556208668e",
+                        "_Resource": "assets:/GameDesign/Stage/st401/Layout/Loaded/Enemy/SubBoss/st401_SubBoss_Ms006025_00.pog.json"
+                    },
+                    "_ZakoLayoutID": {
+                        "_ID": "00000000-0000-0000-0000-000000000000",
+                        "_Resource": null
+                    },
+                    "_ZakoLayoutTag": {
+                        "_FieldID": {
+                            "_Name": getLocationName(questLocation),
+                            "_Value": parseInt(questLocation)
+                        },
+                        "_IsIntentionallyBlank": false,
+                        "_Value": 4
+                    }
+                },
+                "_DataList": {
+                    "_AddPoint": 198,
+                    "_ArenaFenceCloseTime": 60,
+                    "_ArenaFenceInitWaitTime": 60,
+                    "_ArenaFenceReuseableTime": 120,
+                    "_ArenaFenceStatus": "OPEN",
+                    "_ArenaPillarStatus": "USE",
+                    "_BattleBGM": 0,
+                    "_BossRushParams": [],
+                    "_BossRushParams=": null,
+                    "_ClearBGM": 0,
+                    "_ClearCondition": {
+                        "_TargetInfoArray": selectedMonsters.map((monster, index) => ({
+                            "_ConditionalMoveData": {
+                                "_DestArray": [],
+                                "_IsUse": false,
+                                "_RevertOnCompleted": false,
+                                "_StartAfterFirstCondition": false
+                            },
+                            "_EmTargetID": 101 + index,
+                            "_LegendaryID": "NORMAL",
+                            "_RoleID": "NORMAL",
+                            "_ShowTargetGuide": true,
+                            "_TargetIDValue": monster.fixedId,
+                            "_TargetValue": 1
+                        })),
+                        "_TargetType": 1
+                    },
+                    "_EnableGuestNpc": false,
+                    "_ExOverrideID": 0,
+                    "_HRPoint": hrPoints,
+                    "_IconType": {
+                        "_Name": "app.QuestDef.QUEST_ICON_TYPE_Fixed",
+                        "_Value": 1927315328
+                    },
+                    "_Index": 0,
+                    "_IsOverrideArenaFenceParam": false,
+                    "_IsOverrideArenaPillarParam": false,
+                    "_IsSettingSupply": false,
+                    "_MissionId": {
+                        "_Name": questTitle,
+                        "_Value": questId
+                    },
+                    "_OrderCondition": {
+                        "_MaxPlayerNum": 4,
+                        "_OrderHR": 21,
+                        "_OrderMR": 0,
+                        "_PremiseMission": {
+                            "_Name": "前置任务ID",
+                            "_Value": -282127296
+                        }
+                    },
+                    "_PartnerNpc": {
+                        "_Name": "無効値",
+                        "_Value": 4
+                    },
+                    "_QuestAttribute": 0,
+                    "_QuestLife": 2,
+                    "_QuestLv": questLevel,
+                    "_QuestMsg": {
+                        "_ClearConditionMsg": {
+                            "_IsAuto": true,
+                            "_MsgID": "00000000-0000-0000-0000-000000000000"
+                        },
+                        "_ClientNameMsg": "9707f537-aadd-4e0e-983a-8ec7c72fc1fb",
+                        "_DetailMsg": "b15f3acb-b6ca-4e18-968b-2a5161f9679f",
+                        "_FailConditionMsg": {
+                            "_IsAuto": true,
+                            "_MsgIDs": [
+                                "00000000-0000-0000-0000-000000000000",
+                                "00000000-0000-0000-0000-000000000000"
+                            ]
+                        },
+                        "_FailConditionMsg_Other": "1e801eb7-04d4-4ebe-9423-62e633c1b3ee",
+                        "_OrderConditionMsg": {
+                            "_IsAuto": true,
+                            "_MsgIDs": [
+                                "00000000-0000-0000-0000-000000000000",
+                                "00000000-0000-0000-0000-000000000000"
+                            ]
+                        },
+                        "_OrderConditionMsg_Other": "acbf575d-58a2-46a4-bd33-af9eb4d105be",
+                        "_OrderConditionMsg_StProgress": "7d277c75-8e3e-4073-9351-072604943ce6",
+                        "_TitleMsg": "ad16cdce-1ad5-4ba9-8ac2-4cee6dd52021"
+                    },
+                    "_QuestType": 0,
+                    "_RemMoney": rewardMoney,
+                    "_Stage": {
+                        "_Name": getLocationName(questLocation),
+                        "_Value": parseInt(questLocation)
+                    },
+                    "_SubBossInfoArray": [],
+                    "_SubBossInfoArray=": null,
+                    "_SupplyID": {
+                        "_Name": "無効値",
+                        "_Value": 1966686080
+                    },
+                    "_TimeLimit": timeLimit,
+                    "_Version": 1
+                },
+                "_IsRecommended": false,
+                "_MessageAssetList": [
+                    {
+                        "Language": 13, // Chinese
+                        "MessageData": [
+                            {"Name": "Mission600016_000", "Text": ""},
+                            {"Name": "Mission600016_001", "Text": ""},
+                            {"Name": "Mission600016_100", "Text": questTitle},
+                            {"Name": "Mission600016_101", "Text": "Custom Quest Generator"},
+                            {"Name": "Mission600016_102", "Text": questDescription},
+                            {"Name": "Mission600016_122", "Text": ""},
+                            {"Name": "Mission600016_123", "Text": ""},
+                            {"Name": "Mission600016_132", "Text": ""}
+                        ]
+                    },
+                    {
+                        "Language": 1, // English
+                        "MessageData": [
+                            {"Name": "Mission600016_000", "Text": ""},
+                            {"Name": "Mission600016_001", "Text": ""},
+                            {"Name": "Mission600016_100", "Text": questTitle},
+                            {"Name": "Mission600016_101", "Text": "Custom Quest Generator"},
+                            {"Name": "Mission600016_102", "Text": questDescription},
+                            {"Name": "Mission600016_122", "Text": ""},
+                            {"Name": "Mission600016_123", "Text": ""},
+                            {"Name": "Mission600016_132", "Text": ""}
+                        ]
+                    },
+                    {
+                        "Language": 0, // Japanese
+                        "MessageData": [
+                            {"Name": "Mission600016_000", "Text": ""},
+                            {"Name": "Mission600016_001", "Text": ""},
+                            {"Name": "Mission600016_100", "Text": questTitle},
+                            {"Name": "Mission600016_101", "Text": "Custom Quest Generator"},
+                            {"Name": "Mission600016_102", "Text": questDescription},
+                            {"Name": "Mission600016_122", "Text": ""},
+                            {"Name": "Mission600016_123", "Text": ""},
+                            {"Name": "Mission600016_132", "Text": ""}
+                        ]
+                    }
+                ],
+                "_StreamQuestData": {
+                    "_EmSetData": {
+                        "_EmSet_AnimalTag": {
+                            "_FieldID": {
+                                "_Name": getLocationName(questLocation),
+                                "_Value": parseInt(questLocation)
+                            },
+                            "_Value": 1
+                        },
+                        "_EmSet_BossZako": null,
+                        "_Stage": {
+                            "_Name": getLocationName(questLocation),
+                            "_Value": parseInt(questLocation)
+                        }
+                    },
+                    "_IsFixWorldTime": false,
+                    "_IsFixWorldTimeQuest": false,
+                    "_IsSetWorldTime": false,
+                    "_IsSetWorldTimeQuest": true,
+                    "_IsStopTimeTiming": false,
+                    "_IsStopTimeTimingQuest": false,
+                    "_MissionTypeSerial": {
+                        "_Name": "活动任务类型",
+                        "_Value": 1025928384
+                    },
+                    "_SetEnvironmentDataList": [
+                        {
+                            "_EnvTimeRate": 0,
+                            "_EnvType": {
+                                "_Name": "荒廃期",
+                                "_Value": 1961958400
+                            },
+                            "_ForcastDatas": [],
+                            "_IsFixEnv": false,
+                            "_IsTransitionEnv": false,
+                            "_StageType": {
+                                "_Name": getLocationName(questLocation),
+                                "_Value": parseInt(questLocation)
+                            },
+                            "_StopTiming_EnvType": {
+                                "_Name": "無効値",
+                                "_Value": 2110947200
+                            }
+                        }
+                    ],
+                    "_SetLGuideMsgData": {
+                        "IsSubOrder": false,
+                        "SetMsgID": "00000000-0000-0000-0000-000000000000",
+                        "gaugeSpritNum": 0,
+                        "isCanSkip": false,
+                        "isGauge": false
+                    },
+                    "_SetMoonData": {
+                        "_IsSetMoon": false,
+                        "_MoonOptionsVariationIndex": 0,
+                        "_MoonSetting": {
+                            "_Name": "無効値",
+                            "_Value": -770399616
+                        },
+                        "_MoonTextureVariationIndex": 0
+                    },
+                    "_StopTimeTimingHour": 0,
+                    "_StopTimeTimingHourQuest": 0,
+                    "_StopTimeTimingMinute": 0,
+                    "_StopTimeTimingMinuteQuest": 0,
+                    "_WorldTimeHour": 0,
+                    "_WorldTimeHourQuest": 21,
+                    "_WorldTimeMinute": 0,
+                    "_WorldTimeMinuteQuest": 0
+                }
+            };
+            
+            // Generate the ext quest data
+            const extData = {
+                "questId": questId,
+                "rewardId": 520,
+                "rewardItems": rewardItems.map(item => ({
+                    "itemId": item.itemId,
+                    "itemName": item.itemName,
+                    "minCount": item.minCount,
+                    "maxCount": item.maxCount,
+                    "probability": item.probability
+                }))
+            };
+            
+            // Store the generated quest data
+            questData.raw = rawData;
+            questData.ext = extData;
+            
+            // Display the quest data
+            document.getElementById('output').textContent = JSON.stringify(questData, null, 4);
+            
+            // Update the quest summary
+            updateQuestSummary();
+            
+            // Enable the download button
+            document.getElementById('download-btn').disabled = false;
+        }
+
+        // Update the quest summary
+        function updateQuestSummary() {
+            if (!questData.raw || !questData.ext) return;
+            
+            const summary = document.getElementById('quest-summary');
+            const quest = questData.raw;
+            const rewards = questData.ext.rewardItems;
+            
+            let html = `
+                <div><strong>Title:</strong> ${quest._MessageAssetList.find(m => m.Language === getLanguageCode(currentLanguage)).MessageData[2].Text}</div>
+                <div><strong>ID:</strong> ${quest._DataList._MissionId._Value}</div>
+                <div><strong>Level:</strong> ★${quest._DataList._QuestLv}</div>
+                <div><strong>Location:</strong> ${quest._DataList._Stage._Name}</div>
+                <div><strong>Time Limit:</strong> ${quest._DataList._TimeLimit} minutes</div>
+                <div><strong>Reward Money:</strong> ${quest._DataList._RemMoney}</div>
+                <div><strong>HR Points:</strong> ${quest._DataList._HRPoint}</div>
+                <div><strong>Monsters:</strong></div>
+                <ul>
+                    ${quest._BossZakoDataList._MainTargetDataList.map(target => {
+                        const monster = enemiesData.find(m => m.fixedId === target._EmID);
+                        return `<li>${monster ? monster.name[currentLanguage] : 'Unknown Monster'}</li>`;
+                    }).join('')}
+                </ul>
+                <div><strong>Rewards:</strong></div>
+                <ul>
+                    ${rewards.map(reward => `
+                        <li>${reward.itemName} (x${reward.minCount}-${reward.maxCount}) - ${reward.probability}%</li>
+                    `).join('')}
+                </ul>
+            `;
+            
+            summary.innerHTML = html;
+        }
+
+        // Download the quest files
+        function downloadQuest() {
+            if (!questData.raw || !questData.ext) {
+                showAlert("No quest data to download");
+                return;
+            }
+            
+            const questId = questData.ext.questId;
+            
+            // Create a zip file with both quest files
+            const zip = new JSZip();
+            zip.file(`${questId}.raw.json`, JSON.stringify(questData.raw, null, 4));
+            zip.file(`${questId}.ext.json`, JSON.stringify(questData.ext, null, 4));
+            
+            // Generate the zip file
+            zip.generateAsync({type: "blob"}).then(function(content) {
+                // Create a download link
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = `quest_${questId}.zip`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+
+        // Helper functions
+        function getLocationName(locationId) {
+            const locations = {
+                "1181994624": "st401",
+                "1198037248": "st001",
+                "1180946048": "st101",
+                "1179897472": "st201",
+                "1182777600": "st301"
+            };
+            return locations[locationId] || "st401";
+        }
+
+        function getLanguageCode(language) {
+            const codes = {
+                "en": 1,
+                "jp": 0,
+                "cn": 13
+            };
+            return codes[language] || 1;
+        }
+
+        function showAlert(message) {
+            const alert = document.getElementById('alert-message');
+            alert.textContent = message;
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+    
+    <!-- Include JSZip for quest file download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</body>
+</html>
