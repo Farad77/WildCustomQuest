@@ -2,7 +2,7 @@
 
 A tool for creating custom quests for Monster Hunter Wild with a user-friendly interface.
 
-**Try it online: [https://farad77.github.io/WildCustomQuest/](https://farad77.github.io/WildCustomQuest/)**
+**Try it online: [https://farad77.github.io/WildCustomQuest/quest_generator.html](https://farad77.github.io/WildCustomQuest/quest_generator.html)**
 
 ## Overview
 
