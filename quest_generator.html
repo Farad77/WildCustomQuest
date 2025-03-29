@@ -73,6 +73,7 @@
             grid-template-columns: 1fr 1fr 1fr 1fr;
             gap: 10px;
             align-items: center;
+            width: 100%;
         }
         .reward-item input[type="number"] {
             width: 100%;
@@ -185,6 +186,14 @@
             border: 1px solid #f5c6cb;
             display: none;
         }
+        .tag {
+            transition: all 0.2s ease;
+        }
+        .tag:hover {
+            background-color: #e0e0e0 !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 <body>
@@ -264,6 +273,10 @@
         
         <div class="tab-content" id="monsters">
             <h2>Select Monsters</h2>
+            <div class="button-group" style="margin-bottom: 20px;">
+                <button class="secondary" onclick="goToTab('quest-info')">Previous</button>
+                <button onclick="goToTab('rewards')">Next: Set Rewards</button>
+            </div>
             <input type="text" id="searchMonster" placeholder="Search monsters...">
             <div class="grid" id="monster-list">
                 <!-- Monster cards will be populated by JavaScript -->
@@ -272,20 +285,29 @@
                 <h3>Selected Monsters:</h3>
                 <p>No monsters selected</p>
             </div>
-            <div class="button-group">
-                <button class="secondary" onclick="goToTab('quest-info')">Previous</button>
-                <button onclick="goToTab('rewards')">Next: Set Rewards</button>
-            </div>
         </div>
         
         <div class="tab-content" id="rewards">
             <h2>Quest Rewards</h2>
             <input type="text" id="searchItem" placeholder="Search items...">
+            <div class="search-tags" style="margin: 5px 0 15px; display: flex; flex-wrap: wrap; gap: 8px;">
+                <span style="font-size: 0.85em; margin-right: 5px;">Quick filters:</span>
+                <a href="#" class="tag" onclick="document.getElementById('searchItem').value='orb'; filterItems('orb'); return false;" style="font-size: 0.85em; background: #f0f0f0; padding: 2px 8px; border-radius: 12px; text-decoration: none; color: #333;">orb</a>
+                <a href="#" class="tag" onclick="document.getElementById('searchItem').value='fragment'; filterItems('fragment'); return false;" style="font-size: 0.85em; background: #f0f0f0; padding: 2px 8px; border-radius: 12px; text-decoration: none; color: #333;">fragment</a>
+                <a href="#" class="tag" onclick="document.getElementById('searchItem').value='symbol'; filterItems('symbol'); return false;" style="font-size: 0.85em; background: #f0f0f0; padding: 2px 8px; border-radius: 12px; text-decoration: none; color: #333;">symbol</a>
+                <a href="#" class="tag" onclick="document.getElementById('searchItem').value='620'; filterItems('620'); return false;" style="font-size: 0.85em; background: #f0f0f0; padding: 2px 8px; border-radius: 12px; text-decoration: none; color: #333;">620</a>
+            </div>
+            <div class="reward-header" style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; font-weight: bold; padding: 0 10px;">
+                <div>Item Name</div>
+                <div>Minimum</div>
+                <div>Maximum</div>
+                <div>Chance %</div>
+            </div>
             <div id="reward-items">
                 <!-- Reward items will be added here -->
             </div>
             <button onclick="addReward()" style="margin-top: 15px;">+ Add Reward Item</button>
-            <div class="button-group">
+            <div class="button-group" style="margin-top: 20px;">
                 <button class="secondary" onclick="goToTab('monsters')">Previous</button>
                 <button onclick="goToTab('generate')">Next: Generate Quest</button>
             </div>
@@ -592,18 +614,18 @@
             
             rewardElement.innerHTML = `
                 <div class="reward-controls">
-                    <select class="item-select" onchange="updateRewardItem(${rewardIndex}, 'itemId', this.value)">
+                    <select class="item-select" title="Item Name" onchange="updateRewardItem(${rewardIndex}, 'itemId', this.value)">
                         ${itemsData.map(item => `
                             <option value="${item.id}" ${item.id === newReward.itemId ? 'selected' : ''}>
-                                ${item.name && item.name[currentLanguage] ? item.name[currentLanguage] : '---'}
+                                ${item.id}: ${item.name && item.name[currentLanguage] ? item.name[currentLanguage] : '---'}
                             </option>
                         `).join('')}
                     </select>
-                    <input type="number" placeholder="Min" min="1" value="${newReward.minCount}" 
+                    <input type="number" title="Minimum Count" placeholder="Min" min="1" value="${newReward.minCount}" 
                         onchange="updateRewardItem(${rewardIndex}, 'minCount', this.value)">
-                    <input type="number" placeholder="Max" min="1" value="${newReward.maxCount}" 
+                    <input type="number" title="Maximum Count" placeholder="Max" min="1" value="${newReward.maxCount}" 
                         onchange="updateRewardItem(${rewardIndex}, 'maxCount', this.value)">
-                    <input type="number" placeholder="Probability %" min="1" max="100" value="${newReward.probability}" 
+                    <input type="number" title="Drop Chance Percentage" placeholder="Chance %" min="1" max="100" value="${newReward.probability}" 
                         onchange="updateRewardItem(${rewardIndex}, 'probability', this.value)">
                 </div>
                 <button onclick="removeRewardItem(${rewardIndex})">×</button>
@@ -661,18 +683,18 @@
                 
                 rewardElement.innerHTML = `
                     <div class="reward-controls">
-                        <select class="item-select" onchange="updateRewardItem(${idx}, 'itemId', this.value)">
+                        <select class="item-select" title="Item Name" onchange="updateRewardItem(${idx}, 'itemId', this.value)">
                             ${itemsData.map(menuItem => `
                                 <option value="${menuItem.id}" ${menuItem.id === item.itemId ? 'selected' : ''}>
-                                    ${menuItem.name && menuItem.name[currentLanguage] ? menuItem.name[currentLanguage] : '---'}
+                                    ${menuItem.id}: ${menuItem.name && menuItem.name[currentLanguage] ? menuItem.name[currentLanguage] : '---'}
                                 </option>
                             `).join('')}
                         </select>
-                        <input type="number" placeholder="Min" min="1" value="${item.minCount}" 
+                        <input type="number" title="Minimum Count" placeholder="Min" min="1" value="${item.minCount}" 
                             onchange="updateRewardItem(${idx}, 'minCount', this.value)">
-                        <input type="number" placeholder="Max" min="1" value="${item.maxCount}" 
+                        <input type="number" title="Maximum Count" placeholder="Max" min="1" value="${item.maxCount}" 
                             onchange="updateRewardItem(${idx}, 'maxCount', this.value)">
-                        <input type="number" placeholder="Probability %" min="1" max="100" value="${item.probability}" 
+                        <input type="number" title="Drop Chance Percentage" placeholder="Chance %" min="1" max="100" value="${item.probability}" 
                             onchange="updateRewardItem(${idx}, 'probability', this.value)">
                     </div>
                     <button onclick="removeRewardItem(${idx})">×</button>
@@ -695,7 +717,7 @@
                         if (select) {
                             select.innerHTML = itemsData.map(menuItem => `
                                 <option value="${menuItem.id}" ${menuItem.id === item.itemId ? 'selected' : ''}>
-                                    ${menuItem.name && menuItem.name[currentLanguage] ? menuItem.name[currentLanguage] : '---'}
+                                    ${menuItem.id}: ${menuItem.name && menuItem.name[currentLanguage] ? menuItem.name[currentLanguage] : '---'}
                                 </option>
                             `).join('');
                         }
