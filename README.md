@@ -2,6 +2,8 @@
 
 A tool for creating custom quests for Monster Hunter Wild with a user-friendly interface.
 
+**Try it online: [https://farad77.github.io/WildCustomQuest/](https://farad77.github.io/WildCustomQuest/)**
+
 ## Overview
 
 WildCustomQuest allows you to create custom hunts by selecting monsters, defining rewards, and setting quest parameters through a simple web interface. Generate quest files that can be imported directly into the game for a personalized hunting experience.
